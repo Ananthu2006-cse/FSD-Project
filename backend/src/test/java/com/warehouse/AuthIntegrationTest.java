@@ -29,7 +29,7 @@ public class AuthIntegrationTest {
         String loginJson = """
                 {
                     "email": "admin@example.com",
-                    "password": "password123"
+                    "password": "demo@2024"
                 }
                 """;
 
@@ -64,7 +64,7 @@ public class AuthIntegrationTest {
         String loginJson = """
                 {
                     "email": "nonexistent@example.com",
-                    "password": "password123"
+                    "password": "demo@2024"
                 }
                 """;
 
@@ -100,5 +100,46 @@ public class AuthIntegrationTest {
         mockMvc.perform(get("/api/auth/me")
                         .header("Authorization", "Bearer invalid.jwt.token"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void testSuccessfulRegistration() throws Exception {
+        String uniqueEmail = "newuser_" + System.currentTimeMillis() + "@example.com";
+        String regJson = String.format("""
+                {
+                    "name": "New Operator",
+                    "email": "%s",
+                    "password": "demo@2024",
+                    "role": "STAFF"
+                }
+                """, uniqueEmail);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(regJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.user.name").value("New Operator"))
+                .andExpect(jsonPath("$.user.email").value(uniqueEmail))
+                .andExpect(jsonPath("$.user.role").value("STAFF"))
+                .andExpect(jsonPath("$.user.password").doesNotExist());
+    }
+
+    @Test
+    public void testDuplicateEmailRegistrationFails() throws Exception {
+        String regJson = """
+                {
+                    "name": "Duplicate Admin",
+                    "email": "admin@example.com",
+                    "password": "demo@2024",
+                    "role": "ADMIN"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(regJson))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("An account with this email already exists."));
     }
 }

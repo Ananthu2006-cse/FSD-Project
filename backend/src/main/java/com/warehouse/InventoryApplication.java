@@ -22,22 +22,28 @@ public class InventoryApplication {
     @Bean
     public CommandLineRunner seedUsers(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            seedUser(userRepository, passwordEncoder, "Admin", "admin@example.com", "password123", "ADMIN");
-            seedUser(userRepository, passwordEncoder, "Manager", "manager@example.com", "password123", "MANAGER");
-            seedUser(userRepository, passwordEncoder, "Staff", "staff@example.com", "password123", "STAFF");
+            seedUser(userRepository, passwordEncoder, "Admin", "admin@example.com", "demo@2024", "ADMIN");
+            seedUser(userRepository, passwordEncoder, "Manager", "manager@example.com", "demo@2024", "MANAGER");
+            seedUser(userRepository, passwordEncoder, "Staff", "staff@example.com", "demo@2024", "STAFF");
         };
     }
 
     private void seedUser(UserRepository repo, PasswordEncoder encoder, String name, String email, String rawPassword, String role) {
-        if (!repo.existsByEmail(email)) {
-            User user = new User(
-                    name,
-                    email,
-                    encoder.encode(rawPassword),
-                    role,
-                    "ACTIVE"
-            );
-            repo.save(user);
-        }
+        repo.findByEmail(email).ifPresentOrElse(
+                user -> {
+                    user.setPassword(encoder.encode(rawPassword));
+                    repo.save(user);
+                },
+                () -> {
+                    User user = new User(
+                            name,
+                            email,
+                            encoder.encode(rawPassword),
+                            role,
+                            "ACTIVE"
+                    );
+                    repo.save(user);
+                }
+        );
     }
 }

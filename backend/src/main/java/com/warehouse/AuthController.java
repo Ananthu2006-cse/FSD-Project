@@ -67,8 +67,47 @@ public class AuthController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        if (request == null || request.name() == null || request.name().isBlank() ||
+                request.email() == null || request.email().isBlank() ||
+                request.password() == null || request.password().isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new MessageResponse("Name, email, and password are required."));
+        }
+
+        String email = request.email().trim().toLowerCase();
+        if (userRepository.existsByEmail(email)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new MessageResponse("An account with this email already exists."));
+        }
+
+        String role = "STAFF";
+        if (request.role() != null && !request.role().isBlank()) {
+            String requestedRole = request.role().trim().toUpperCase();
+            if ("ADMIN".equals(requestedRole) || "MANAGER".equals(requestedRole) || "STAFF".equals(requestedRole)) {
+                role = requestedRole;
+            }
+        }
+
+        User newUser = new User(
+                request.name().trim(),
+                email,
+                passwordEncoder.encode(request.password()),
+                role,
+                "ACTIVE"
+        );
+
+        User savedUser = userRepository.save(newUser);
+        String token = jwtService.generateToken(savedUser);
+        UserDto userDto = new UserDto(savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getRole());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(new LoginResponse(token, userDto));
+    }
+
     // Colocated DTO records to prevent unnecessary file proliferation
     public record LoginRequest(String email, String password) {}
+    public record RegisterRequest(String name, String email, String password, String role) {}
     public record UserDto(Long id, String name, String email, String role) {}
     public record LoginResponse(String token, UserDto user) {}
     public record MessageResponse(String message) {}
