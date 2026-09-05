@@ -12,6 +12,24 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface UserSummary {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  createdAt: string;
+}
+
+export const fetchUsers = async (): Promise<UserSummary[]> => {
+  const response = await api.get<UserSummary[]>('/users');
+  return response.data;
+};
+
+export const updateUserStatus = async (id: number, status: 'ACTIVE' | 'INACTIVE'): Promise<void> => {
+  await api.patch(`/users/${id}/status`, { status });
+};
+
 const api = axios.create({
   baseURL: '/api',
   headers: {

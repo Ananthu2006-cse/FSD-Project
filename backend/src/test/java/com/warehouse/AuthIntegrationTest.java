@@ -142,4 +142,78 @@ public class AuthIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("An account with this email already exists."));
     }
+
+    @Test
+    public void testAdminCanAccessUserManagement() throws Exception {
+        User admin = userRepository.findByEmail("admin@example.com").orElseThrow();
+        String token = jwtService.generateToken(admin);
+
+        mockMvc.perform(get("/api/users")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].email").isNotEmpty());
+    }
+
+    @Test
+    public void testManagerCannotAccessUserManagement() throws Exception {
+        User manager = userRepository.findByEmail("manager@example.com").orElseThrow();
+        String token = jwtService.generateToken(manager);
+
+        mockMvc.perform(get("/api/users")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access Denied: Insufficient permissions."));
+    }
+
+    @Test
+    public void testStaffCannotAccessUserManagement() throws Exception {
+        User staff = userRepository.findByEmail("staff@example.com").orElseThrow();
+        String token = jwtService.generateToken(staff);
+
+        mockMvc.perform(get("/api/users")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access Denied: Insufficient permissions."));
+    }
+
+    @Test
+    public void testManagerCanAccessReportsSummary() throws Exception {
+        User manager = userRepository.findByEmail("manager@example.com").orElseThrow();
+        String token = jwtService.generateToken(manager);
+
+        mockMvc.perform(get("/api/reports/summary")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.module").value("REPORTS"));
+    }
+
+    @Test
+    public void testStaffCannotAccessReportsSummary() throws Exception {
+        User staff = userRepository.findByEmail("staff@example.com").orElseThrow();
+        String token = jwtService.generateToken(staff);
+
+        mockMvc.perform(get("/api/reports/summary")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access Denied: Insufficient permissions."));
+    }
+
+    @Test
+    public void testStaffCanAccessInventorySummary() throws Exception {
+        User staff = userRepository.findByEmail("staff@example.com").orElseThrow();
+        String token = jwtService.generateToken(staff);
+
+        mockMvc.perform(get("/api/inventory/summary")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.module").value("INVENTORY"));
+    }
+
+    @Test
+    public void testUnauthenticatedAccessToUsersEndpointRejected() throws Exception {
+        mockMvc.perform(get("/api/users"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Unauthorized"));
+    }
 }
