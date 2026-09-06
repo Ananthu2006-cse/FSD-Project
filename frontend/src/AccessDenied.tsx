@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import { Navigation } from './Navigation';
 
 interface AccessDeniedProps {
   requiredRoles?: string[];
@@ -12,10 +11,8 @@ export const AccessDenied: React.FC<AccessDeniedProps> = ({ requiredRoles }) => 
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#f4eedb] font-sans selection:bg-amber-300 selection:text-black">
-      <Navigation />
-
-      <main className="max-w-3xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+    <div className="selection:bg-amber-300 selection:text-black">
+      <div className="max-w-3xl mx-auto">
         <div className="bg-[#fffdf7] border-4 border-stone-900 rounded-lg p-6 sm:p-10 shadow-[8px_8px_0px_0px_#1c1917] text-center">
           
           {/* Warning Icon Badge */}
@@ -77,7 +74,7 @@ export const AccessDenied: React.FC<AccessDeniedProps> = ({ requiredRoles }) => 
           </div>
 
         </div>
-      </main>
+      </div>
     </div>
   );
 };
