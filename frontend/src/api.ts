@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export interface User {
-  id: number;
+  id: string | number;
   name: string;
   email: string;
   role: string;
@@ -13,7 +13,7 @@ export interface LoginResponse {
 }
 
 export interface UserSummary {
-  id: number;
+  id: string | number;
   name: string;
   email: string;
   role: string;
@@ -26,7 +26,7 @@ export const fetchUsers = async (): Promise<UserSummary[]> => {
   return response.data;
 };
 
-export const updateUserStatus = async (id: number, status: 'ACTIVE' | 'INACTIVE'): Promise<void> => {
+export const updateUserStatus = async (id: string | number, status: 'ACTIVE' | 'INACTIVE'): Promise<void> => {
   await api.patch(`/users/${id}/status`, { status });
 };
 
