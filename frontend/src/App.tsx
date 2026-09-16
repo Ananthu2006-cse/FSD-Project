@@ -6,6 +6,7 @@ import { Layout } from './Layout';
 import { Dashboard } from './Dashboard';
 import { AccessDenied } from './AccessDenied';
 import { PlaceholderModule } from './PlaceholderModule';
+import { Products } from './Products';
 
 // ─── Route Guards ──────────────────────────────────────────────────────────────
 
@@ -99,18 +100,12 @@ export const App: React.FC = () => {
               }
             />
 
-            {/* ADMIN + MANAGER */}
+            {/* Products — Full CRUD for ADMIN & MANAGER, View-Only for STAFF */}
             <Route
               path="/products"
               element={
-                <RoleRoute allowedRoles={['ADMIN', 'MANAGER']}>
-                  <PlaceholderModule
-                    moduleKey="products"
-                    title="Products"
-                    stationCode="MOD-PRD-02"
-                    description="Product master records, categories, and dimension specs"
-                    plannedFeatures={['Product SKU Directory', 'Category Taxonomy', 'Unit Hierarchy']}
-                  />
+                <RoleRoute allowedRoles={['ADMIN', 'MANAGER', 'STAFF']}>
+                  <Products />
                 </RoleRoute>
               }
             />

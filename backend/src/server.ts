@@ -5,7 +5,9 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
+import productRoutes from './routes/productRoutes';
 import { User } from './models/User';
+import { Product } from './models/Product';
 
 dotenv.config();
 
@@ -28,7 +30,54 @@ app.get('/api/health', (_req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api', userRoutes);
+
+// Seed default products if empty
+const seedProducts = async () => {
+  const count = await Product.countDocuments();
+  if (count === 0) {
+    await Product.create([
+      {
+        name: 'Heavy Duty Euro Pallet',
+        sku: 'PLT-EUR-001',
+        description: 'Standard heavy duty wooden warehouse pallet (1200x800mm)',
+        category: 'Storage & Pallets',
+        unitPrice: 24.50,
+        quantity: 150,
+        status: 'ACTIVE',
+      },
+      {
+        name: 'Industrial Barcode Scanner 2D',
+        sku: 'SCN-WMS-104',
+        description: 'Rugged handheld wireless Bluetooth 2D QR/barcode reader',
+        category: 'Electronics & Tools',
+        unitPrice: 189.99,
+        quantity: 35,
+        status: 'ACTIVE',
+      },
+      {
+        name: 'Galvanized Steel Storage Bin',
+        sku: 'BIN-STL-045',
+        description: 'Stackable steel warehouse picking bin with label holder',
+        category: 'Shelving & Bins',
+        unitPrice: 42.00,
+        quantity: 80,
+        status: 'ACTIVE',
+      },
+      {
+        name: 'Industrial Heavy Stretch Wrap',
+        sku: 'PKG-WRP-009',
+        description: '500mm x 300m 23-micron pallet packing shrink film roll',
+        category: 'Packaging',
+        unitPrice: 16.75,
+        quantity: 210,
+        status: 'ACTIVE',
+      },
+    ]);
+    console.log('[Database] Initial product catalog seeded.');
+  }
+};
 
 // Seed default users if they don't exist
 const seedUsers = async () => {
@@ -83,6 +132,7 @@ const connectDatabase = async () => {
   }
 
   await seedUsers();
+  await seedProducts();
 };
 
 const startServer = async () => {
