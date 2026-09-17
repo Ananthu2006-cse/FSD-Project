@@ -64,6 +64,7 @@ export const Dashboard: React.FC = () => {
     // STAFF
     return [
       { title: 'Products', code: 'MOD-PRD-02', path: '/products', description: 'View master item catalogue, item specifications, and unit balances.', badge: 'CATALOGUE' },
+      { title: 'Warehouses', code: 'MOD-WAR-03', path: '/warehouses', description: 'View warehouse facilities, storage aisles, racks, and bin locations.', badge: 'FACILITIES' },
       { title: 'Inventory', code: 'MOD-INV-04', path: '/inventory', description: 'View current available stock across designated floor picking bins.', badge: 'FLOOR STOCK' },
       { title: 'Stock Movement', code: 'MOD-MOV-05', path: '/movements', description: 'Execute bin-to-bin transfers, replenishments, and incoming putaways.', badge: 'TRANSFERS' },
       { title: 'Orders', code: 'MOD-ORD-06', path: '/orders', description: 'View and process assigned order tasks from the fulfillment queue.', badge: 'ORDERS' },

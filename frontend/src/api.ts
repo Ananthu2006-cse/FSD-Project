@@ -80,6 +80,96 @@ export const deleteProduct = async (id: string | number): Promise<{ message: str
   return response.data;
 };
 
+// ─── Warehouse & Location Management API ──────────────────────────────────────
+
+export interface Warehouse {
+  id: string;
+  name: string;
+  code: string;
+  address: string;
+  description: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface WarehouseFormData {
+  name: string;
+  code: string;
+  address?: string;
+  description?: string;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface LocationItem {
+  id: string;
+  warehouseId: string | { _id: string; name: string; code: string };
+  name: string;
+  code: string;
+  description: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface LocationFormData {
+  warehouseId: string;
+  name: string;
+  code: string;
+  description?: string;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
+export const fetchWarehouses = async (): Promise<Warehouse[]> => {
+  const response = await api.get<Warehouse[]>('/warehouses');
+  return response.data;
+};
+
+export const fetchWarehouseById = async (id: string): Promise<Warehouse> => {
+  const response = await api.get<Warehouse>(`/warehouses/${id}`);
+  return response.data;
+};
+
+export const createWarehouse = async (data: WarehouseFormData): Promise<Warehouse> => {
+  const response = await api.post<Warehouse>('/warehouses', data);
+  return response.data;
+};
+
+export const updateWarehouse = async (id: string, data: Partial<WarehouseFormData>): Promise<Warehouse> => {
+  const response = await api.put<Warehouse>(`/warehouses/${id}`, data);
+  return response.data;
+};
+
+export const deleteWarehouse = async (id: string): Promise<{ message: string; id: string }> => {
+  const response = await api.delete<{ message: string; id: string }>(`/warehouses/${id}`);
+  return response.data;
+};
+
+export const fetchLocations = async (): Promise<LocationItem[]> => {
+  const response = await api.get<LocationItem[]>('/locations');
+  return response.data;
+};
+
+export const fetchLocationsByWarehouse = async (warehouseId: string): Promise<LocationItem[]> => {
+  const response = await api.get<LocationItem[]>(`/warehouses/${warehouseId}/locations`);
+  return response.data;
+};
+
+export const createLocation = async (data: LocationFormData): Promise<LocationItem> => {
+  const response = await api.post<LocationItem>('/locations', data);
+  return response.data;
+};
+
+export const updateLocation = async (id: string, data: Partial<LocationFormData>): Promise<LocationItem> => {
+  const response = await api.put<LocationItem>(`/locations/${id}`, data);
+  return response.data;
+};
+
+export const deleteLocation = async (id: string): Promise<{ message: string; id: string }> => {
+  const response = await api.delete<{ message: string; id: string }>(`/locations/${id}`);
+  return response.data;
+};
+
 const api = axios.create({
   baseURL: '/api',
   headers: {

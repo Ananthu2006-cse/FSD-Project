@@ -7,6 +7,7 @@ import { Dashboard } from './Dashboard';
 import { AccessDenied } from './AccessDenied';
 import { PlaceholderModule } from './PlaceholderModule';
 import { Products } from './Products';
+import { Warehouses } from './Warehouses';
 
 // ─── Route Guards ──────────────────────────────────────────────────────────────
 
@@ -109,17 +110,12 @@ export const App: React.FC = () => {
                 </RoleRoute>
               }
             />
+            {/* Warehouses — Full CRUD for ADMIN & MANAGER, View-Only for STAFF */}
             <Route
               path="/warehouses"
               element={
-                <RoleRoute allowedRoles={['ADMIN', 'MANAGER']}>
-                  <PlaceholderModule
-                    moduleKey="warehouses"
-                    title="Warehouses"
-                    stationCode="MOD-WAR-03"
-                    description="Facility blueprints, aisles, racks, shelves, and storage bin registry"
-                    plannedFeatures={['Multi-Warehouse Registry', 'Bin Capacities', 'Zone & Hazard Flags']}
-                  />
+                <RoleRoute allowedRoles={['ADMIN', 'MANAGER', 'STAFF']}>
+                  <Warehouses />
                 </RoleRoute>
               }
             />

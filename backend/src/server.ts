@@ -6,8 +6,12 @@ import bcrypt from 'bcryptjs';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import productRoutes from './routes/productRoutes';
+import warehouseRoutes from './routes/warehouseRoutes';
+import locationRoutes from './routes/locationRoutes';
 import { User } from './models/User';
 import { Product } from './models/Product';
+import { Warehouse } from './models/Warehouse';
+import { Location } from './models/Location';
 
 dotenv.config();
 
@@ -31,6 +35,8 @@ app.get('/api/health', (_req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/warehouses', warehouseRoutes);
+app.use('/api/locations', locationRoutes);
 app.use('/api', userRoutes);
 
 // Seed default products if empty
@@ -110,6 +116,44 @@ const seedUsers = async () => {
   console.log('[Database] Seed users initialized (admin, manager, staff).');
 };
 
+// Seed default warehouses and locations if empty
+const seedWarehouses = async () => {
+  const count = await Warehouse.countDocuments();
+  if (count === 0) {
+    const mainWh = await Warehouse.create({
+      name: 'Main Distribution Centre',
+      code: 'WH-001',
+      address: '12 Industrial Estate Road, Sector 4, Logistics Park',
+      description: 'Primary storage and dispatch facility',
+      status: 'ACTIVE',
+    });
+    const northWh = await Warehouse.create({
+      name: 'North Annex Storage',
+      code: 'WH-002',
+      address: '7 North Storage Lane, Zone B',
+      description: 'Overflow and bulk storage annex',
+      status: 'ACTIVE',
+    });
+    // Locations for Main WH
+    for (const loc of [
+      { name: 'Aisle A - Bay 01', code: 'A-01', description: 'Heavy pallets zone' },
+      { name: 'Aisle A - Bay 02', code: 'A-02', description: 'General storage' },
+      { name: 'Aisle B - Bay 01', code: 'B-01', description: 'Electronics rack' },
+      { name: 'Aisle B - Bay 02', code: 'B-02', description: 'Fragile items' },
+    ]) {
+      await Location.create({ warehouseId: mainWh._id, ...loc, status: 'ACTIVE' });
+    }
+    // Locations for North Annex
+    for (const loc of [
+      { name: 'Zone C - Bay 01', code: 'C-01', description: 'Bulk rolls and packaging' },
+      { name: 'Zone C - Bay 02', code: 'C-02', description: 'Spare capacity' },
+    ]) {
+      await Location.create({ warehouseId: northWh._id, ...loc, status: 'ACTIVE' });
+    }
+    console.log('[Database] Warehouse and location seed data initialized.');
+  }
+};
+
 // Database Connection with graceful dev fallback
 const connectDatabase = async () => {
   try {
@@ -133,6 +177,7 @@ const connectDatabase = async () => {
 
   await seedUsers();
   await seedProducts();
+  await seedWarehouses();
 };
 
 const startServer = async () => {

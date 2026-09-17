@@ -35,7 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: 'Warehouses',
     path: '/warehouses',
-    allowedRoles: ['ADMIN', 'MANAGER'],
+    allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
