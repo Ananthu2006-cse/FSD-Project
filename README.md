@@ -4,7 +4,8 @@ A full-stack web-based **Warehouse Inventory Management System** built using the
 
 ## 🚀 Live Application
 
-**Frontend:** `YOUR_FRONTEND_URL`
+**Frontend:** `https://inventory-frontend-k9pc.onrender.com
+`
 
 **Backend API:** `YOUR_BACKEND_URL`
 
