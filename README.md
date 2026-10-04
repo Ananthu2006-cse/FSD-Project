@@ -7,7 +7,7 @@ A full-stack web-based **Warehouse Inventory Management System** built using the
 **Frontend:** https://inventory-frontend-k9pc.onrender.com
 
 
-**Backend API:** `YOUR_BACKEND_URL`
+**Backend API:** https://inventory-backend-b4xu.onrender.com
 
 > Replace the above placeholders with your deployed Render URLs.
 
