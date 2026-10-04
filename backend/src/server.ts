@@ -29,7 +29,10 @@ const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/inventory_db';
 
 // Middleware
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || true,
+  credentials: true,
+}));
 app.use(express.json());
 
 // Root & Health check
