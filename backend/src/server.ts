@@ -8,10 +8,19 @@ import userRoutes from './routes/userRoutes';
 import productRoutes from './routes/productRoutes';
 import warehouseRoutes from './routes/warehouseRoutes';
 import locationRoutes from './routes/locationRoutes';
+import inventoryRoutes from './routes/inventoryRoutes';
+import movementRoutes from './routes/movementRoutes';
+import damagedRoutes from './routes/damagedRoutes';
+import orderRoutes from './routes/orderRoutes';
+import reportsRoutes from './routes/reportsRoutes';
 import { User } from './models/User';
 import { Product } from './models/Product';
 import { Warehouse } from './models/Warehouse';
 import { Location } from './models/Location';
+import { Inventory } from './models/Inventory';
+import { StockMovement } from './models/StockMovement';
+import { DamagedStock } from './models/DamagedStock';
+import { Order } from './models/Order';
 
 dotenv.config();
 
@@ -37,6 +46,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/movements', movementRoutes);
+app.use('/api/damaged', damagedRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/reports', reportsRoutes);
 app.use('/api', userRoutes);
 
 // Seed default products if empty
@@ -154,6 +168,125 @@ const seedWarehouses = async () => {
   }
 };
 
+// Seed operational data (Inventory, Movements, Damaged Stock, Orders) if empty
+const seedOperationalData = async () => {
+  const invCount = await Inventory.countDocuments();
+  if (invCount === 0) {
+    const products = await Product.find();
+    const mainWh = await Warehouse.findOne({ code: 'WH-001' });
+    const northWh = await Warehouse.findOne({ code: 'WH-002' });
+    const adminUser = await User.findOne({ role: 'ADMIN' });
+
+    if (products.length >= 4 && mainWh && northWh && adminUser) {
+      const locA1 = await Location.findOne({ warehouseId: mainWh._id, code: 'A-01' });
+      const locA2 = await Location.findOne({ warehouseId: mainWh._id, code: 'A-02' });
+      const locB1 = await Location.findOne({ warehouseId: mainWh._id, code: 'B-01' });
+      const locC1 = await Location.findOne({ warehouseId: northWh._id, code: 'C-01' });
+
+      if (locA1 && locA2 && locB1 && locC1) {
+        // Seed Inventory
+        const inv1 = await Inventory.create({
+          productId: products[0]._id, // Euro Pallet
+          warehouseId: mainWh._id,
+          locationId: locA1._id,
+          quantity: 120,
+          minimumStock: 25,
+        });
+
+        const inv2 = await Inventory.create({
+          productId: products[1]._id, // Barcode Scanner
+          warehouseId: mainWh._id,
+          locationId: locB1._id,
+          quantity: 18,
+          minimumStock: 10,
+        });
+
+        const inv3 = await Inventory.create({
+          productId: products[2]._id, // Steel Bin
+          warehouseId: mainWh._id,
+          locationId: locA2._id,
+          quantity: 8, // Low stock on purpose
+          minimumStock: 15,
+        });
+
+        const inv4 = await Inventory.create({
+          productId: products[3]._id, // Stretch Wrap
+          warehouseId: northWh._id,
+          locationId: locC1._id,
+          quantity: 210,
+          minimumStock: 50,
+        });
+
+        // Seed initial movements
+        await StockMovement.create([
+          {
+            type: 'IN',
+            productId: products[0]._id,
+            warehouseId: mainWh._id,
+            locationId: locA1._id,
+            quantity: 120,
+            reason: 'Inbound delivery from supplier container manifest #4092',
+            userId: adminUser._id,
+          },
+          {
+            type: 'TRANSFER',
+            productId: products[1]._id,
+            warehouseId: mainWh._id,
+            locationId: locA1._id,
+            toWarehouseId: mainWh._id,
+            toLocationId: locB1._id,
+            quantity: 5,
+            reason: 'Replenishing secure tech electronics shelf',
+            userId: adminUser._id,
+          },
+        ]);
+
+        // Seed 1 Damaged item report
+        await DamagedStock.create({
+          productId: products[2]._id,
+          warehouseId: mainWh._id,
+          locationId: locA2._id,
+          quantity: 2,
+          reason: 'Forklift impact caused dented steel frame during unloading',
+          reportedBy: adminUser._id,
+          status: 'REPORTED',
+        });
+
+        // Seed Orders
+        await Order.create([
+          {
+            orderNumber: 'ORD-7001-ALPHA',
+            customerName: 'Continental Logistics Group',
+            items: [
+              { productId: products[0]._id, quantity: 15, unitPrice: products[0].unitPrice },
+              { productId: products[3]._id, quantity: 20, unitPrice: products[3].unitPrice },
+            ],
+            totalAmount: 15 * products[0].unitPrice + 20 * products[3].unitPrice,
+            status: 'CONFIRMED',
+            dispatchBay: 'Bay 02 - North Gate',
+            notes: 'High-priority regional distribution dispatch',
+            createdBy: adminUser._id,
+          },
+          {
+            orderNumber: 'ORD-7002-BETA',
+            customerName: 'Apex Warehouse Supplies Ltd',
+            items: [
+              { productId: products[1]._id, quantity: 2, unitPrice: products[1].unitPrice },
+            ],
+            totalAmount: 2 * products[1].unitPrice,
+            status: 'PENDING',
+            dispatchBay: 'Bay 01',
+            notes: 'Standard courier pickup',
+            createdBy: adminUser._id,
+          },
+        ]);
+
+        console.log('[Database] Operational data (Inventory, Movements, Damaged, Orders) seeded.');
+      }
+    }
+  }
+};
+
 // Database Connection with graceful dev fallback
 const connectDatabase = async () => {
   try {
@@ -178,6 +311,7 @@ const connectDatabase = async () => {
   await seedUsers();
   await seedProducts();
   await seedWarehouses();
+  await seedOperationalData();
 };
 
 const startServer = async () => {

@@ -8,6 +8,12 @@ import { AccessDenied } from './AccessDenied';
 import { PlaceholderModule } from './PlaceholderModule';
 import { Products } from './Products';
 import { Warehouses } from './Warehouses';
+import { Inventory } from './Inventory';
+import { StockMovements } from './StockMovements';
+import { DamagedStock } from './DamagedStock';
+import { Orders } from './Orders';
+import { Dispatch } from './Dispatch';
+import { Reports } from './Reports';
 
 // ─── Route Guards ──────────────────────────────────────────────────────────────
 
@@ -119,89 +125,62 @@ export const App: React.FC = () => {
                 </RoleRoute>
               }
             />
+            {/* Damaged Stock — Isolation & Reporting */}
             <Route
               path="/damaged"
               element={
-                <RoleRoute allowedRoles={['ADMIN', 'MANAGER']}>
-                  <PlaceholderModule
-                    moduleKey="damaged"
-                    title="Damaged Stock"
-                    stationCode="MOD-DAM-08"
-                    description="Record and review damaged or defective items for write-off or return"
-                    plannedFeatures={['Damage Report Logging', 'Write-Off Approvals', 'Supplier Return Tracking']}
-                  />
-                </RoleRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <RoleRoute allowedRoles={['ADMIN', 'MANAGER']}>
-                  <PlaceholderModule
-                    moduleKey="reports"
-                    title="Reports & Analytics"
-                    stationCode="MOD-REP-09"
-                    description="Inventory turnover analytics, fulfillment velocity, and operational reports"
-                    plannedFeatures={['Inventory Valuation', 'Order Velocity Metrics', 'Stock Variance Analytics']}
-                  />
+                <RoleRoute allowedRoles={['ADMIN', 'MANAGER', 'STAFF']}>
+                  <DamagedStock />
                 </RoleRoute>
               }
             />
 
-            {/* All roles */}
+            {/* Reports & Analytics — Operational Ledger & Loss Audits */}
+            <Route
+              path="/reports"
+              element={
+                <RoleRoute allowedRoles={['ADMIN', 'MANAGER']}>
+                  <Reports />
+                </RoleRoute>
+              }
+            />
+
+            {/* Inventory Management — Stock Balances & Bin Allocations */}
             <Route
               path="/inventory"
               element={
                 <RoleRoute allowedRoles={['ADMIN', 'MANAGER', 'STAFF']}>
-                  <PlaceholderModule
-                    moduleKey="inventory"
-                    title="Inventory"
-                    stationCode="MOD-INV-04"
-                    description="Stock balance visibility, reservations, safety margins, and batch tracking"
-                    plannedFeatures={['Real-Time Stock Balances', 'Reorder Point & Alerts', 'Batch & Expiry Ledger']}
-                  />
+                  <Inventory />
                 </RoleRoute>
               }
             />
+
+            {/* Stock Movement — Transfers & Relocations */}
             <Route
               path="/movements"
               element={
                 <RoleRoute allowedRoles={['ADMIN', 'MANAGER', 'STAFF']}>
-                  <PlaceholderModule
-                    moduleKey="movements"
-                    title="Stock Movement"
-                    stationCode="MOD-MOV-05"
-                    description="Relocations between warehouse bins, replenishment triggers, and adjustments"
-                    plannedFeatures={['Bin-to-Bin Relocations', 'Putaway Workflows', 'Transfer Audit Trail']}
-                  />
+                  <StockMovements />
                 </RoleRoute>
               }
             />
+
+            {/* Orders — Fulfillment Workflow */}
             <Route
               path="/orders"
               element={
                 <RoleRoute allowedRoles={['ADMIN', 'MANAGER', 'STAFF']}>
-                  <PlaceholderModule
-                    moduleKey="orders"
-                    title="Orders"
-                    stationCode="MOD-ORD-06"
-                    description="Customer order queues, fulfillment routing, and manifest tracking"
-                    plannedFeatures={['Order Fulfillment Pipeline', 'Carrier Integration', 'Order Status Tracking']}
-                  />
+                  <Orders />
                 </RoleRoute>
               }
             />
+
+            {/* Dispatch — Outbound Bay Staging */}
             <Route
               path="/dispatch"
               element={
                 <RoleRoute allowedRoles={['ADMIN', 'MANAGER', 'STAFF']}>
-                  <PlaceholderModule
-                    moduleKey="dispatch"
-                    title="Dispatch"
-                    stationCode="MOD-DSP-07"
-                    description="Staging area tracking, pallet loading verification, and outbound status updates"
-                    plannedFeatures={['Outbound Bay Staging', 'Pallet Labeling & Inspection', 'Carrier Pickup Logging']}
-                  />
+                  <Dispatch />
                 </RoleRoute>
               }
             />

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { DashboardSummary, fetchDashboardStats } from './api';
 
 interface ModuleCard {
   title: string;
@@ -13,6 +14,13 @@ interface ModuleCard {
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const role = user?.role || 'STAFF';
+  const [stats, setStats] = useState<DashboardSummary | null>(null);
+
+  useEffect(() => {
+    fetchDashboardStats()
+      .then((res) => setStats(res.summary))
+      .catch(() => {});
+  }, []);
 
   const getRoleTitle = (r: string) => {
     switch (r) {
@@ -118,6 +126,45 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Live Operational Metrics from MongoDB */}
+      {stats && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-black text-stone-900 uppercase tracking-tight flex items-center gap-2">
+              <span>Live Operational Ledger</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </h2>
+            <span className="font-mono text-[11px] text-stone-500 uppercase">Real-Time DB Sync</span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono">
+            <div className="bg-[#fffdf7] border-2 border-stone-900 p-3.5 rounded shadow-[3px_3px_0px_0px_#1c1917]">
+              <span className="text-[10px] text-stone-500 uppercase font-bold block">In-Stock Valuation</span>
+              <span className="text-xl font-black text-stone-900">${stats.totalStockValuation.toLocaleString()}</span>
+              <span className="text-[10px] text-stone-600 block mt-0.5">{stats.totalStockUnits} units in {stats.totalLocations} bins</span>
+            </div>
+
+            <div className="bg-[#fffdf7] border-2 border-stone-900 p-3.5 rounded shadow-[3px_3px_0px_0px_#1c1917]">
+              <span className="text-[10px] text-amber-700 uppercase font-bold block">Low Stock Items</span>
+              <span className="text-xl font-black text-amber-700">{stats.lowStockCount}</span>
+              <span className="text-[10px] text-stone-600 block mt-0.5">{stats.outOfStockCount} out of stock</span>
+            </div>
+
+            <div className="bg-[#fffdf7] border-2 border-stone-900 p-3.5 rounded shadow-[3px_3px_0px_0px_#1c1917]">
+              <span className="text-[10px] text-red-700 uppercase font-bold block">Damaged Quarantine</span>
+              <span className="text-xl font-black text-red-700">{stats.totalDamagedItems} units</span>
+              <span className="text-[10px] text-stone-600 block mt-0.5">{stats.unresolvedDamagedCount} pending audit</span>
+            </div>
+
+            <div className="bg-[#fffdf7] border-2 border-stone-900 p-3.5 rounded shadow-[3px_3px_0px_0px_#1c1917]">
+              <span className="text-[10px] text-blue-800 uppercase font-bold block">Order Pipeline</span>
+              <span className="text-xl font-black text-blue-900">{stats.totalOrders}</span>
+              <span className="text-[10px] text-stone-600 block mt-0.5">{stats.pendingOrders} pending &bull; {stats.dispatchedOrders} dispatched</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Module Cards */}
       <div>
