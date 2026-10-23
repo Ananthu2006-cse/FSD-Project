@@ -141,7 +141,7 @@ export const Login: React.FC = () => {
             </div>
 
             <div className="inline-block bg-stone-900 text-amber-300 font-mono text-[10px] font-bold tracking-widest px-2.5 py-0.5 rounded uppercase mb-2">
-              {isRegistering ? 'CREATE NEW OPERATOR PROFILE' : 'EST. 1984 • LOGISTICS ENGINE'}
+              {isRegistering ? 'CREATE NEW OPERATOR PROFILE' : 'EST. 2026• LOGISTICS ENGINE'}
             </div>
 
             <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight uppercase">
