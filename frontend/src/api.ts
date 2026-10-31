@@ -378,6 +378,58 @@ export const fetchDashboardStats = async (): Promise<AnalyticsResponse> => {
   return response.data;
 };
 
+// ─── Intelligence Module API ───────────────────────────────────────────────────
+
+export interface ProductPrediction {
+  productId: string;
+  inventoryId: string;
+  productName: string;
+  sku: string;
+  category: string;
+  unitPrice: number;
+  currentStock: number;
+  minimumStock: number;
+  avgDailyConsumption: number;
+  daysRemaining: number | null;
+  alertLevel: 'CRITICAL' | 'WARNING' | 'OK' | 'NO_DATA';
+  suggestedReorderQty: number;
+  reorderUrgency: 'URGENT' | 'SOON' | 'MONITOR' | 'OK';
+  totalOutLast30Days: number;
+  totalOutLast7Days: number;
+}
+
+export interface DemandProduct {
+  productId: string;
+  productName: string;
+  sku: string;
+  category: string;
+  total: number;
+}
+
+export interface DailyTrendPoint {
+  date: string;
+  totalOut: number;
+}
+
+export interface IntelligenceResponse {
+  predictions: ProductPrediction[];
+  demandAnalytics: {
+    fastMoving: DemandProduct[];
+    slowMoving: DemandProduct[];
+    dailyTrend: DailyTrendPoint[];
+  };
+  summary: {
+    criticalCount: number;
+    warningCount: number;
+    pendingRestockCount: number;
+  };
+}
+
+export const fetchIntelligence = async (): Promise<IntelligenceResponse> => {
+  const response = await api.get<IntelligenceResponse>('/intelligence/predictions');
+  return response.data;
+};
+
 const api = axios.create({
   baseURL: (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'),
   headers: {

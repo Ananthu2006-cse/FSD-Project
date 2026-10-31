@@ -14,6 +14,7 @@ import { DamagedStock } from './DamagedStock';
 import { Orders } from './Orders';
 import { Dispatch } from './Dispatch';
 import { Reports } from './Reports';
+import { Intelligence } from './Intelligence';
 
 // ─── Route Guards ──────────────────────────────────────────────────────────────
 
@@ -141,6 +142,16 @@ export const App: React.FC = () => {
               element={
                 <RoleRoute allowedRoles={['ADMIN', 'MANAGER']}>
                   <Reports />
+                </RoleRoute>
+              }
+            />
+
+            {/* Intelligence — Smart Predictions & Demand Analytics */}
+            <Route
+              path="/intelligence"
+              element={
+                <RoleRoute allowedRoles={['ADMIN', 'MANAGER']}>
+                  <Intelligence />
                 </RoleRoute>
               }
             />

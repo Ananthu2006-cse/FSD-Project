@@ -13,6 +13,7 @@ import movementRoutes from './routes/movementRoutes';
 import damagedRoutes from './routes/damagedRoutes';
 import orderRoutes from './routes/orderRoutes';
 import reportsRoutes from './routes/reportsRoutes';
+import intelligenceRoutes from './routes/intelligenceRoutes';
 import { User } from './models/User';
 import { Product } from './models/Product';
 import { Warehouse } from './models/Warehouse';
@@ -54,6 +55,7 @@ app.use('/api/movements', movementRoutes);
 app.use('/api/damaged', damagedRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/intelligence', intelligenceRoutes);
 app.use('/api', userRoutes);
 
 // Seed default products if empty

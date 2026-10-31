@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import { DashboardSummary, fetchDashboardStats } from './api';
+import { DashboardSummary, fetchDashboardStats, fetchIntelligence } from './api';
 
 interface ModuleCard {
   title: string;
@@ -15,12 +15,21 @@ export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const role = user?.role || 'STAFF';
   const [stats, setStats] = useState<DashboardSummary | null>(null);
+  const [intelligenceSummary, setIntelligenceSummary] = useState<{
+    criticalCount: number; warningCount: number; pendingRestockCount: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchDashboardStats()
       .then((res) => setStats(res.summary))
       .catch(() => {});
-  }, []);
+    // Load intelligence summary for ADMIN and MANAGER
+    if (role === 'ADMIN' || role === 'MANAGER') {
+      fetchIntelligence()
+        .then((res) => setIntelligenceSummary(res.summary))
+        .catch(() => {});
+    }
+  }, [role]);
 
   const getRoleTitle = (r: string) => {
     switch (r) {
@@ -52,6 +61,7 @@ export const Dashboard: React.FC = () => {
         { title: 'Dispatch', code: 'MOD-DSP-07', path: '/dispatch', description: 'Manage outbound shipments, staging, carrier manifests, and bay operations.', badge: 'DISPATCH' },
         { title: 'Damaged Stock', code: 'MOD-DAM-08', path: '/damaged', description: 'Record and review damaged or defective items for write-off or return.', badge: 'QUALITY' },
         { title: 'Reports', code: 'MOD-REP-09', path: '/reports', description: 'Generate turnover rates, throughput metrics, and audit logs.', badge: 'ANALYTICS' },
+        { title: 'Intelligence', code: 'MOD-INT-11', path: '/intelligence', description: 'Smart stock predictions, restock suggestions, and demand velocity analytics.', badge: 'AI INSIGHTS' },
         { title: 'User Management', code: 'MOD-USR-01', path: '/users', description: 'Control operator credentials, access clearance levels, and account statuses.', badge: 'ADMIN ONLY' },
       ];
     }
@@ -66,6 +76,7 @@ export const Dashboard: React.FC = () => {
         { title: 'Dispatch', code: 'MOD-DSP-07', path: '/dispatch', description: 'Manage outbound shipments, staging, carrier manifests, and bay operations.', badge: 'DISPATCH' },
         { title: 'Damaged Stock', code: 'MOD-DAM-08', path: '/damaged', description: 'Record and review damaged or defective items for write-off or return.', badge: 'QUALITY' },
         { title: 'Reports', code: 'MOD-REP-09', path: '/reports', description: 'Generate turnover rates, throughput metrics, and audit logs.', badge: 'ANALYTICS' },
+        { title: 'Intelligence', code: 'MOD-INT-11', path: '/intelligence', description: 'Smart stock predictions, restock suggestions, and demand velocity analytics.', badge: 'AI INSIGHTS' },
       ];
     }
 
@@ -161,6 +172,51 @@ export const Dashboard: React.FC = () => {
               <span className="text-[10px] text-blue-800 uppercase font-bold block">Order Pipeline</span>
               <span className="text-xl font-black text-blue-900">{stats.totalOrders}</span>
               <span className="text-[10px] text-stone-600 block mt-0.5">{stats.pendingOrders} pending &bull; {stats.dispatchedOrders} dispatched</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Intelligence Alert Strip — ADMIN and MANAGER only */}
+      {intelligenceSummary && (intelligenceSummary.criticalCount > 0 || intelligenceSummary.warningCount > 0) && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-black text-stone-900 uppercase tracking-tight flex items-center gap-2">
+              <span>Inventory Intelligence Alerts</span>
+              {intelligenceSummary.criticalCount > 0 && (
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              )}
+            </h2>
+            <Link
+              to="/intelligence"
+              className="font-mono text-[11px] font-black text-amber-700 uppercase hover:underline"
+            >
+              View Intelligence →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+            <div className={`p-3.5 border-2 rounded shadow-[3px_3px_0px_0px_#ef4444] ${
+              intelligenceSummary.criticalCount > 0
+                ? 'bg-red-50 border-red-500'
+                : 'bg-[#fffdf7] border-stone-900'
+            }`}>
+              <span className="text-[10px] text-red-700 uppercase font-bold block">🚨 Critical Stock-Out Risk</span>
+              <span className="text-xl font-black text-red-700">{intelligenceSummary.criticalCount}</span>
+              <span className="text-[10px] text-stone-600 block mt-0.5">products run out in ≤7 days</span>
+            </div>
+            <div className={`p-3.5 border-2 rounded shadow-[3px_3px_0px_0px_#f59e0b] ${
+              intelligenceSummary.warningCount > 0
+                ? 'bg-amber-50 border-amber-500'
+                : 'bg-[#fffdf7] border-stone-900'
+            }`}>
+              <span className="text-[10px] text-amber-700 uppercase font-bold block">⚠️ Low Stock Warnings</span>
+              <span className="text-xl font-black text-amber-700">{intelligenceSummary.warningCount}</span>
+              <span className="text-[10px] text-stone-600 block mt-0.5">products run out in ≤14 days</span>
+            </div>
+            <div className="bg-[#fffdf7] border-2 border-blue-400 p-3.5 rounded shadow-[3px_3px_0px_0px_#3b82f6]">
+              <span className="text-[10px] text-blue-700 uppercase font-bold block">📦 Pending Restocks</span>
+              <span className="text-xl font-black text-blue-900">{intelligenceSummary.pendingRestockCount}</span>
+              <span className="text-[10px] text-stone-600 block mt-0.5">items need reordering now</span>
             </div>
           </div>
         </div>
