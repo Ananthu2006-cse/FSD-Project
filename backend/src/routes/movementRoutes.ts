@@ -81,6 +81,8 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
 
     // Find source inventory
     let sourceInv = await Inventory.findOne({ productId, warehouseId, locationId });
+    let previousQuantity = sourceInv ? sourceInv.quantity : 0;
+    let newQuantity = previousQuantity;
 
     if (type === 'IN') {
       if (!sourceInv) {
@@ -94,6 +96,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
       } else {
         sourceInv.quantity += numQty;
       }
+      newQuantity = sourceInv.quantity;
       await sourceInv.save();
     } else if (type === 'OUT') {
       if (!sourceInv || sourceInv.quantity < numQty) {
@@ -104,6 +107,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
         return;
       }
       sourceInv.quantity -= numQty;
+      newQuantity = sourceInv.quantity;
       await sourceInv.save();
     } else if (type === 'TRANSFER') {
       if (!toWarehouseId || !mongoose.isValidObjectId(toWarehouseId)) {
@@ -136,6 +140,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
 
       // Deduct from source
       sourceInv.quantity -= numQty;
+      newQuantity = sourceInv.quantity;
       await sourceInv.save();
 
       // Add to destination
@@ -169,10 +174,11 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
       } else {
         sourceInv.quantity = numQty;
       }
+      newQuantity = sourceInv.quantity;
       await sourceInv.save();
     }
 
-    // Record the stock movement audit log
+    // Record the stock movement audit log with before & after quantities
     const movement = new StockMovement({
       type,
       productId,
@@ -181,6 +187,8 @@ router.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void>
       toWarehouseId: type === 'TRANSFER' ? toWarehouseId : undefined,
       toLocationId: type === 'TRANSFER' ? toLocationId : undefined,
       quantity: numQty,
+      previousQuantity,
+      newQuantity,
       reason: reason || `Manual stock ${type.toLowerCase()} logged by operator`,
       userId: req.user?._id,
     });

@@ -34,6 +34,42 @@ router.get('/', async (req: AuthenticatedRequest, res: Response): Promise<void> 
   }
 });
 
+// GET /api/inventory/export/csv — Export inventory records as CSV
+router.get('/export/csv', async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const records = await Inventory.find()
+      .populate('productId', 'name sku category unitPrice')
+      .populate('warehouseId', 'name code')
+      .populate('locationId', 'name code')
+      .sort({ updatedAt: -1 });
+
+    const headers = ['Product Name', 'SKU', 'Category', 'Warehouse', 'Location', 'Quantity', 'Minimum Stock', 'Unit Price', 'Stock Status'];
+    const rows = records.map((r) => {
+      const prod = r.productId as any;
+      const wh = r.warehouseId as any;
+      const loc = r.locationId as any;
+      return [
+        `"${(prod?.name || 'N/A').replace(/"/g, '""')}"`,
+        `"${(prod?.sku || 'N/A').replace(/"/g, '""')}"`,
+        `"${(prod?.category || 'N/A').replace(/"/g, '""')}"`,
+        `"${(wh?.code || 'N/A').replace(/"/g, '""')}"`,
+        `"${(loc?.code || 'N/A').replace(/"/g, '""')}"`,
+        r.quantity,
+        r.minimumStock,
+        (prod?.unitPrice || 0).toFixed(2),
+        r.status,
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="inventory-export.csv"');
+    res.status(200).send(csvContent);
+  } catch (err: any) {
+    res.status(500).json({ message: 'Error generating inventory CSV export.' });
+  }
+});
+
 // GET /api/inventory/:id — View single record
 router.get('/:id', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   if (!mongoose.isValidObjectId(req.params.id)) {

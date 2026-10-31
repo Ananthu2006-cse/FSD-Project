@@ -55,8 +55,24 @@ export interface ProductFormData {
   status: 'ACTIVE' | 'INACTIVE';
 }
 
-export const fetchProducts = async (params?: { search?: string; category?: string; status?: string }): Promise<Product[]> => {
+export const fetchProducts = async (params?: {
+  search?: string;
+  category?: string;
+  status?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}): Promise<Product[]> => {
   const response = await api.get<Product[]>('/products', { params });
+  return response.data;
+};
+
+export const exportProductsCsv = async (): Promise<Blob> => {
+  const response = await api.get('/products/export/csv', { responseType: 'blob' });
+  return response.data;
+};
+
+export const exportInventoryCsv = async (): Promise<Blob> => {
+  const response = await api.get('/inventory/export/csv', { responseType: 'blob' });
   return response.data;
 };
 
@@ -240,6 +256,8 @@ export interface StockMovementItem {
   toWarehouseId?: { _id?: string; name: string; code: string };
   toLocationId?: { _id?: string; name: string; code: string };
   quantity: number;
+  previousQuantity?: number;
+  newQuantity?: number;
   reason: string;
   userId?: { name: string; email: string; role: string };
   createdAt: string;
@@ -355,6 +373,7 @@ export interface DashboardSummary {
   totalLocations: number;
   totalStockUnits: number;
   totalStockValuation: number;
+  inStockCount?: number;
   lowStockCount: number;
   outOfStockCount: number;
   totalDamagedItems: number;
@@ -368,8 +387,24 @@ export interface DashboardSummary {
   totalOrders: number;
 }
 
+export interface CategoryBreakdownItem {
+  category: string;
+  count: number;
+  totalStock: number;
+  valuation: number;
+}
+
+export interface StatusBreakdown {
+  inStock: number;
+  lowStock: number;
+  outOfStock: number;
+  totalRecords: number;
+}
+
 export interface AnalyticsResponse {
   summary: DashboardSummary;
+  categoryBreakdown?: CategoryBreakdownItem[];
+  statusBreakdown?: StatusBreakdown;
   recentMovements: any[];
 }
 
@@ -391,11 +426,13 @@ export interface ProductPrediction {
   minimumStock: number;
   avgDailyConsumption: number;
   daysRemaining: number | null;
+  riskLevel?: 'HIGH_RISK' | 'MEDIUM_RISK' | 'LOW_RISK' | 'HEALTHY' | 'INSUFFICIENT_DATA';
   alertLevel: 'CRITICAL' | 'WARNING' | 'OK' | 'NO_DATA';
   suggestedReorderQty: number;
   reorderUrgency: 'URGENT' | 'SOON' | 'MONITOR' | 'OK';
   totalOutLast30Days: number;
   totalOutLast7Days: number;
+  hasHistoricalData?: boolean;
 }
 
 export interface DemandProduct {
@@ -422,6 +459,9 @@ export interface IntelligenceResponse {
     criticalCount: number;
     warningCount: number;
     pendingRestockCount: number;
+    highRiskCount?: number;
+    mediumRiskCount?: number;
+    lowRiskCount?: number;
   };
 }
 

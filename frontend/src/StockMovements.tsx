@@ -11,6 +11,7 @@ import {
   fetchWarehouses,
   fetchLocationsByWarehouse,
 } from './api';
+import { SkeletonTable, EmptyState } from './components/UIComponents';
 
 export const StockMovements: React.FC = () => {
   const [movements, setMovements] = useState<StockMovementItem[]>([]);
@@ -223,14 +224,16 @@ export const StockMovements: React.FC = () => {
       {/* Movements Table */}
       <div className="bg-[#fffdf7] border-2 border-stone-900 rounded-lg overflow-hidden shadow-[4px_4px_0px_0px_#1c1917]">
         {loading ? (
-          <div className="py-16 text-center">
-            <div className="w-8 h-8 border-3 border-stone-900 border-t-amber-500 rounded-full animate-spin mx-auto mb-2" />
-            <p className="font-mono text-xs text-stone-600 uppercase">Loading movement audit trail...</p>
+          <div className="p-4">
+            <SkeletonTable rows={5} cols={8} />
           </div>
         ) : filteredMovements.length === 0 ? (
-          <div className="py-16 text-center font-mono text-xs text-stone-500 uppercase">
-            No stock movements found matching filter.
-          </div>
+          <EmptyState
+            title="No Movements Found"
+            description="No inventory movement records match the selected filter."
+            actionText="Execute Stock Movement"
+            onAction={openModal}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs">
@@ -242,6 +245,7 @@ export const StockMovements: React.FC = () => {
                   <th className="py-3 px-4">Source Location</th>
                   <th className="py-3 px-4">Destination Location</th>
                   <th className="py-3 px-4 text-center">Units Moved</th>
+                  <th className="py-3 px-4 text-center">Stock Balance</th>
                   <th className="py-3 px-4">Reason / Notes</th>
                   <th className="py-3 px-4">Operator</th>
                 </tr>
@@ -284,7 +288,20 @@ export const StockMovements: React.FC = () => {
                       )}
                     </td>
                     <td className="py-3 px-4 text-center font-black text-sm">
-                      {m.quantity}
+                      <span className={m.type === 'OUT' ? 'text-red-700' : 'text-emerald-700'}>
+                        {m.type === 'OUT' ? `-${m.quantity}` : `+${m.quantity}`}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center font-bold text-stone-800">
+                      {m.previousQuantity !== undefined && m.newQuantity !== undefined ? (
+                        <span className="inline-flex items-center gap-1 font-mono text-[11px] bg-stone-100 px-2 py-0.5 rounded border border-stone-300">
+                          <span className="text-stone-500">{m.previousQuantity}</span>
+                          <span className="text-stone-400">&rarr;</span>
+                          <span className="text-stone-900 font-black">{m.newQuantity}</span>
+                        </span>
+                      ) : (
+                        <span className="text-stone-400">&mdash;</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-stone-600 max-w-xs truncate">
                       {m.reason}

@@ -13,7 +13,9 @@ import {
   fetchProducts,
   fetchWarehouses,
   fetchLocationsByWarehouse,
+  exportInventoryCsv,
 } from './api';
+import { ConfirmModal, SkeletonTable, StatusBadge, EmptyState } from './components/UIComponents';
 
 export const Inventory: React.FC = () => {
   const { user } = useAuth();
@@ -53,10 +55,29 @@ export const Inventory: React.FC = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isExportingCsv, setIsExportingCsv] = useState<boolean>(false);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleExportCsv = async () => {
+    setIsExportingCsv(true);
+    try {
+      const blob = await exportInventoryCsv();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inventory-ledger-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      notifySuccess('Inventory records exported to CSV successfully.');
+    } catch {
+      notifyError('Failed to export inventory records to CSV.');
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
 
   const notifySuccess = (msg: string) => {
     setSuccessMessage(msg);
@@ -253,19 +274,30 @@ export const Inventory: React.FC = () => {
           </p>
         </div>
 
-        {canManage ? (
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={openCreateModal}
-            className="bg-amber-400 hover:bg-amber-500 text-stone-950 font-mono text-xs font-black px-4 py-2.5 rounded border-2 border-stone-900 shadow-[3px_3px_0px_0px_#1c1917] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-2"
+            onClick={handleExportCsv}
+            disabled={isExportingCsv}
+            className="bg-white hover:bg-stone-100 text-stone-900 font-mono text-xs font-bold px-3 py-2.5 rounded border-2 border-stone-900 shadow-[2px_2px_0px_0px_#1c1917] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1.5"
+            title="Download complete inventory ledger as CSV"
           >
-            <span>+</span>
-            <span>ASSIGN STOCK TO BIN</span>
+            <span>{isExportingCsv ? 'EXPORTING...' : '📥 EXPORT CSV'}</span>
           </button>
-        ) : (
-          <span className="font-mono text-[11px] font-bold text-stone-600 bg-stone-100 border border-stone-400 px-3 py-1.5 rounded">
-            VIEW CLEARANCE ({role})
-          </span>
-        )}
+
+          {canManage ? (
+            <button
+              onClick={openCreateModal}
+              className="bg-amber-400 hover:bg-amber-500 text-stone-950 font-mono text-xs font-black px-4 py-2.5 rounded border-2 border-stone-900 shadow-[3px_3px_0px_0px_#1c1917] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-2"
+            >
+              <span>+</span>
+              <span>ASSIGN STOCK TO BIN</span>
+            </button>
+          ) : (
+            <span className="font-mono text-[11px] font-bold text-stone-600 bg-stone-100 border border-stone-400 px-3 py-1.5 rounded">
+              VIEW CLEARANCE ({role})
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -310,14 +342,16 @@ export const Inventory: React.FC = () => {
       {/* Inventory Table */}
       <div className="bg-[#fffdf7] border-2 border-stone-900 rounded-lg overflow-hidden shadow-[4px_4px_0px_0px_#1c1917]">
         {loading ? (
-          <div className="py-16 text-center">
-            <div className="w-8 h-8 border-3 border-stone-900 border-t-amber-500 rounded-full animate-spin mx-auto mb-2" />
-            <p className="font-mono text-xs text-stone-600 uppercase">Loading stock ledger...</p>
+          <div className="p-4">
+            <SkeletonTable rows={5} cols={6} />
           </div>
         ) : filteredInventory.length === 0 ? (
-          <div className="py-16 text-center font-mono text-xs text-stone-500 uppercase">
-            No stock records match current filters.
-          </div>
+          <EmptyState
+            title="No Matching Inventory Records"
+            description="No inventory allocations found matching your search term and filters."
+            actionText={canManage ? "+ Assign Stock to Bin" : undefined}
+            onAction={canManage ? openCreateModal : undefined}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs">
@@ -357,17 +391,7 @@ export const Inventory: React.FC = () => {
                       {item.minimumStock}
                     </td>
                     <td className="py-3 px-4">
-                      <span
-                        className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${
-                          item.status === 'IN_STOCK'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : item.status === 'LOW_STOCK'
-                            ? 'bg-amber-100 text-amber-800 border border-amber-300 animate-pulse'
-                            : 'bg-red-100 text-red-800 border border-red-300'
-                        }`}
-                      >
-                        {item.status.replace('_', ' ')}
-                      </span>
+                      <StatusBadge status={item.status} />
                     </td>
                     {canManage && (
                       <td className="py-3 px-4 text-right whitespace-nowrap">
@@ -500,28 +524,17 @@ export const Inventory: React.FC = () => {
       )}
 
       {/* Delete Confirmation */}
-      {isDeleteOpen && itemToDelete && (
-        <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-[#fffdf7] border-4 border-red-700 rounded-lg max-w-md w-full p-6 shadow-[8px_8px_0px_0px_#b91c1c]">
-            <h3 className="text-xl font-black text-stone-900 uppercase">Remove Inventory Entry?</h3>
-            <p className="font-mono text-xs text-stone-700 mt-2">
-              Are you sure you want to remove the inventory balance for <strong>{itemToDelete.productId?.name}</strong> at <strong>{itemToDelete.locationId?.code}</strong>?
-            </p>
-            <div className="flex items-center justify-end gap-3 mt-6 pt-3 border-t-2 border-stone-900 font-mono text-xs">
-              <button onClick={() => setIsDeleteOpen(false)} className="px-4 py-2 border-2 border-stone-400 rounded">
-                CANCEL
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white font-black px-5 py-2 rounded border-2 border-stone-900 shadow-[3px_3px_0px_0px_#1c1917]"
-              >
-                {isDeleting ? 'REMOVING...' : 'CONFIRM REMOVAL'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={isDeleteOpen && !!itemToDelete}
+        title="Remove Inventory Entry?"
+        message={`Are you sure you want to remove the inventory balance for "${itemToDelete?.productId?.name}" at bin "${itemToDelete?.locationId?.code}"?`}
+        confirmLabel="Confirm Removal"
+        cancelLabel="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setIsDeleteOpen(false)}
+      />
     </div>
   );
 };

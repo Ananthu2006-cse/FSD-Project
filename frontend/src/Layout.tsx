@@ -6,6 +6,7 @@ interface NavItem {
   label: string;
   path: string;
   allowedRoles: string[];
+  section: 'OVERVIEW' | 'LOGISTICS' | 'ORDERS' | 'ANALYTICS' | 'ADMIN';
   icon: React.ReactNode;
 }
 
@@ -14,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Dashboard',
     path: '/dashboard',
     allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    section: 'OVERVIEW',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -25,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Products',
     path: '/products',
     allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    section: 'LOGISTICS',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
@@ -36,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Warehouses',
     path: '/warehouses',
     allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    section: 'LOGISTICS',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -47,6 +51,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Inventory',
     path: '/inventory',
     allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    section: 'LOGISTICS',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" />
@@ -59,6 +64,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Stock Movement',
     path: '/movements',
     allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    section: 'LOGISTICS',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
@@ -67,9 +73,22 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    label: 'Damaged Stock',
+    path: '/damaged',
+    allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    section: 'LOGISTICS',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    ),
+  },
+  {
     label: 'Orders',
     path: '/orders',
     allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    section: 'ORDERS',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
@@ -80,6 +99,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Dispatch',
     path: '/dispatch',
     allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    section: 'ORDERS',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
@@ -88,13 +108,13 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: 'Damaged Stock',
-    path: '/damaged',
-    allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
+    label: 'Intelligence',
+    path: '/intelligence',
+    allowedRoles: ['ADMIN', 'MANAGER'],
+    section: 'ANALYTICS',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-        <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
       </svg>
     ),
   },
@@ -102,6 +122,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Reports',
     path: '/reports',
     allowedRoles: ['ADMIN', 'MANAGER'],
+    section: 'ANALYTICS',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" />
@@ -110,19 +131,10 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: 'Intelligence',
-    path: '/intelligence',
-    allowedRoles: ['ADMIN', 'MANAGER'],
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-      </svg>
-    ),
-  },
-  {
     label: 'Users',
     path: '/users',
     allowedRoles: ['ADMIN'],
+    section: 'ADMIN',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -172,24 +184,42 @@ export const Layout: React.FC = () => {
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-1">
-        {visibleNavItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={() => setSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded text-sm font-mono font-bold uppercase transition-all ${
-                isActive
-                  ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_0px_#1c1917]'
-                  : 'text-stone-300 hover:bg-stone-700 hover:text-white border-2 border-transparent'
-              }`
-            }
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
+        {[
+          { key: 'OVERVIEW', label: 'Overview' },
+          { key: 'LOGISTICS', label: 'Inventory & Facilities' },
+          { key: 'ORDERS', label: 'Fulfillment' },
+          { key: 'ANALYTICS', label: 'Analytics & AI' },
+          { key: 'ADMIN', label: 'Administration' },
+        ].map((group) => {
+          const itemsInGroup = visibleNavItems.filter((item) => item.section === group.key);
+          if (itemsInGroup.length === 0) return null;
+
+          return (
+            <div key={group.key} className="space-y-1">
+              <span className="text-[10px] font-mono font-bold text-amber-400/75 uppercase tracking-wider px-2 block">
+                {group.label}
+              </span>
+              {itemsInGroup.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2.5 px-2.5 py-1.5 rounded text-xs font-mono font-bold uppercase transition-all ${
+                      isActive
+                        ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_0px_#1c1917]'
+                        : 'text-stone-300 hover:bg-stone-800 hover:text-white border-2 border-transparent'
+                    }`
+                  }
+                >
+                  <span className="flex-shrink-0">{item.icon}</span>
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       {/* User info at sidebar bottom */}

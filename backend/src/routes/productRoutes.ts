@@ -7,10 +7,33 @@ const router = Router();
 // Apply JWT authentication to all product routes
 router.use(authenticateToken);
 
-// GET /api/products — View all products (ADMIN, MANAGER, STAFF)
+// GET /api/products/export/csv — Export products catalog as CSV (ADMIN, MANAGER, STAFF)
+router.get('/export/csv', async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const products = await Product.find().sort({ name: 1 });
+    const headers = ['Product Name', 'SKU', 'Category', 'Unit Price', 'Quantity', 'Status'];
+    const rows = products.map((p) => [
+      `"${p.name.replace(/"/g, '""')}"`,
+      `"${p.sku.replace(/"/g, '""')}"`,
+      `"${p.category.replace(/"/g, '""')}"`,
+      p.unitPrice.toFixed(2),
+      p.quantity,
+      p.status,
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="products-export.csv"');
+    res.status(200).send(csvContent);
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating products CSV export.' });
+  }
+});
+
+// GET /api/products — View all products with search, category, status & sorting (ADMIN, MANAGER, STAFF)
 router.get('/', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { search, category, status } = req.query;
+    const { search, category, status, sortBy, sortOrder } = req.query;
     const filter: any = {};
 
     if (search && typeof search === 'string' && search.trim()) {
@@ -26,7 +49,21 @@ router.get('/', async (req: AuthenticatedRequest, res: Response): Promise<void> 
       filter.status = status.trim().toUpperCase();
     }
 
-    const products = await Product.find(filter).sort({ createdAt: -1 });
+    // Determine sort options
+    const sortFieldMap: Record<string, string> = {
+      name: 'name',
+      sku: 'sku',
+      price: 'unitPrice',
+      unitPrice: 'unitPrice',
+      quantity: 'quantity',
+      createdAt: 'createdAt',
+    };
+
+    const sortField = sortBy && typeof sortBy === 'string' && sortFieldMap[sortBy] ? sortFieldMap[sortBy] : 'createdAt';
+    const sortDir = sortOrder === 'asc' ? 1 : -1;
+    const sortOptions: Record<string, 1 | -1> = { [sortField]: sortDir };
+
+    const products = await Product.find(filter).sort(sortOptions);
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving products.' });

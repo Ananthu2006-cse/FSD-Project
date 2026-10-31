@@ -7,6 +7,7 @@ import {
   DemandProduct,
   DailyTrendPoint,
 } from './api';
+import { SkeletonCard, SkeletonTable, RiskBadge, EmptyState } from './components/UIComponents';
 
 // ─── Utility Components ────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ export const Intelligence: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('PREDICTIONS');
-  const [alertFilter, setAlertFilter] = useState<'ALL' | 'CRITICAL' | 'WARNING'>('ALL');
+  const [riskFilter, setRiskFilter] = useState<'ALL' | 'HIGH_RISK' | 'MEDIUM_RISK' | 'LOW_RISK' | 'HEALTHY'>('ALL');
 
   const load = async () => {
     setLoading(true);
@@ -131,9 +132,9 @@ export const Intelligence: React.FC = () => {
 
   // Derived data
   const predictions = data?.predictions ?? [];
-  const filteredPredictions = alertFilter === 'ALL'
+  const filteredPredictions = riskFilter === 'ALL'
     ? predictions
-    : predictions.filter((p) => p.alertLevel === alertFilter);
+    : predictions.filter((p) => (p.riskLevel || (p.alertLevel === 'CRITICAL' ? 'HIGH_RISK' : p.alertLevel === 'WARNING' ? 'MEDIUM_RISK' : 'HEALTHY')) === riskFilter);
 
   const restockItems = predictions
     .filter((p) => p.suggestedReorderQty > 0)
@@ -177,7 +178,9 @@ export const Intelligence: React.FC = () => {
       </div>
 
       {/* ── Summary KPI Cards ──────────────────────────────────────────────── */}
-      {data && (
+      {loading ? (
+        <SkeletonCard count={4} />
+      ) : data ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono">
           <div className="bg-[#fffdf7] border-2 border-stone-900 p-3.5 rounded shadow-[3px_3px_0px_0px_#1c1917]">
             <span className="text-[10px] text-stone-500 uppercase font-bold block">Total Products</span>
@@ -200,7 +203,7 @@ export const Intelligence: React.FC = () => {
             <span className="text-[10px] text-stone-600 block mt-0.5">items need reordering</span>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* ── Tabs ───────────────────────────────────────────────────────────── */}
       <div className="bg-[#fffdf7] border-2 border-stone-900 rounded-lg p-2 shadow-[4px_4px_0px_0px_#1c1917] flex flex-wrap gap-2">
@@ -226,32 +229,47 @@ export const Intelligence: React.FC = () => {
       {/* ── Content Panel ──────────────────────────────────────────────────── */}
       <div className="bg-[#fffdf7] border-2 border-stone-900 rounded-lg p-5 shadow-[4px_4px_0px_0px_#1c1917]">
         {loading ? (
-          <div className="py-16 text-center font-mono text-xs text-stone-500 uppercase">
-            <div className="w-8 h-8 border-4 border-stone-300 border-t-amber-500 rounded-full animate-spin mx-auto mb-3" />
-            Computing intelligence report...
+          <div className="p-2">
+            <SkeletonTable rows={4} cols={8} />
           </div>
         ) : error ? (
-          <div className="py-10 text-center font-mono text-sm text-red-700 uppercase">{error}</div>
+          <EmptyState title="Intelligence Computation Notice" description={error} />
         ) : activeTab === 'PREDICTIONS' ? (
 
           // ── Predictions Tab ──────────────────────────────────────────────
           <div>
+            {/* Real Data Disclaimer Banner (Prompt 2 requirement) */}
+            <div className="bg-amber-100/70 border-2 border-stone-900 rounded p-3 mb-4 font-mono text-[11px] text-stone-800 flex items-start gap-2 shadow-[2px_2px_0px_0px_#1c1917]">
+              <span className="text-base leading-none">🛡️</span>
+              <div>
+                <strong className="uppercase font-black text-stone-900 block">Data Integrity &amp; Estimation Policy:</strong>
+                Estimations are strictly calculated from actual database stock-out movement records over the last 90 days.
+                Products without historical OUT transactions are explicitly marked as <span className="font-bold underline">No OUT Data</span> rather than assuming zero consumption. Stock levels are never auto-adjusted by estimates.
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h3 className="font-mono text-sm font-black text-stone-900 uppercase">
-                Low-Stock Predictions
+                Stock-Out Risk Indicators
               </h3>
-              <div className="flex gap-2">
-                {(['ALL', 'CRITICAL', 'WARNING'] as const).map((f) => (
+              <div className="flex flex-wrap gap-1.5 font-mono">
+                {([
+                  { key: 'ALL', label: 'All' },
+                  { key: 'HIGH_RISK', label: '🚨 High Risk (\u22647d)' },
+                  { key: 'MEDIUM_RISK', label: '⚠️ Medium (8-14d)' },
+                  { key: 'LOW_RISK', label: 'ℹ️ Low (15-30d)' },
+                  { key: 'HEALTHY', label: '✅ Healthy' },
+                ] as const).map((f) => (
                   <button
-                    key={f}
-                    onClick={() => setAlertFilter(f)}
-                    className={`font-mono text-[10px] font-black uppercase px-2.5 py-1 rounded border transition-all ${
-                      alertFilter === f
-                        ? 'bg-stone-900 text-amber-300 border-stone-900'
+                    key={f.key}
+                    onClick={() => setRiskFilter(f.key)}
+                    className={`text-[10px] font-black uppercase px-2.5 py-1 rounded border transition-all ${
+                      riskFilter === f.key
+                        ? 'bg-stone-900 text-amber-300 border-stone-900 shadow-[1px_1px_0px_0px_#1c1917]'
                         : 'bg-white text-stone-600 border-stone-300 hover:border-stone-600'
                     }`}
                   >
-                    {f}
+                    {f.label}
                   </button>
                 ))}
               </div>
@@ -263,72 +281,77 @@ export const Intelligence: React.FC = () => {
                   <tr>
                     <th className="py-2.5 px-3">Product / SKU</th>
                     <th className="py-2.5 px-3 text-center">Current Stock</th>
-                    <th className="py-2.5 px-3 text-center">Min. Stock</th>
-                    <th className="py-2.5 px-3 text-center">Avg Daily Use</th>
-                    <th className="py-2.5 px-3 text-center">Days Left</th>
-                    <th className="py-2.5 px-3 text-center">Alert</th>
-                    <th className="py-2.5 px-3 text-center">7D Out</th>
-                    <th className="py-2.5 px-3 text-center">30D Out</th>
+                    <th className="py-2.5 px-3 text-center">Safety Buffer</th>
+                    <th className="py-2.5 px-3 text-center">Avg Daily OUT</th>
+                    <th className="py-2.5 px-3 text-center">Estimated Days Left</th>
+                    <th className="py-2.5 px-3 text-center">Risk Classification</th>
+                    <th className="py-2.5 px-3 text-center">7D Dispatched</th>
+                    <th className="py-2.5 px-3 text-center">30D Dispatched</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-200">
                   {filteredPredictions.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-stone-400 uppercase">
-                        No products match the selected filter.
+                        No products match the selected risk filter.
                       </td>
                     </tr>
                   ) : (
                     filteredPredictions
                       .sort((a, b) => {
-                        const order = { CRITICAL: 0, WARNING: 1, NO_DATA: 2, OK: 3 };
-                        return order[a.alertLevel] - order[b.alertLevel];
+                        const order = { HIGH_RISK: 0, MEDIUM_RISK: 1, INSUFFICIENT_DATA: 2, LOW_RISK: 3, HEALTHY: 4 };
+                        const riskA = a.riskLevel || (a.alertLevel === 'CRITICAL' ? 'HIGH_RISK' : a.alertLevel === 'WARNING' ? 'MEDIUM_RISK' : 'HEALTHY');
+                        const riskB = b.riskLevel || (b.alertLevel === 'CRITICAL' ? 'HIGH_RISK' : b.alertLevel === 'WARNING' ? 'MEDIUM_RISK' : 'HEALTHY');
+                        return (order[riskA as keyof typeof order] ?? 3) - (order[riskB as keyof typeof order] ?? 3);
                       })
-                      .map((p) => (
-                        <tr
-                          key={p.inventoryId}
-                          className={`transition-colors ${
-                            p.alertLevel === 'CRITICAL' ? 'bg-red-50' :
-                            p.alertLevel === 'WARNING' ? 'bg-amber-50' : ''
-                          }`}
-                        >
-                          <td className="py-2 px-3">
-                            <span className="font-black text-stone-900 uppercase block">{p.productName}</span>
-                            <span className="text-[10px] text-stone-500">{p.sku} &bull; {p.category}</span>
-                          </td>
-                          <td className="py-2 px-3 text-center font-black text-stone-900">{p.currentStock}</td>
-                          <td className="py-2 px-3 text-center text-stone-600">{p.minimumStock}</td>
-                          <td className="py-2 px-3 text-center">
-                            {p.avgDailyConsumption > 0
-                              ? <span className="font-bold text-stone-800">{p.avgDailyConsumption}/day</span>
-                              : <span className="text-stone-400">—</span>}
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            {p.daysRemaining !== null ? (
-                              <span className={`font-black ${
-                                p.daysRemaining <= 7 ? 'text-red-700' :
-                                p.daysRemaining <= 14 ? 'text-amber-700' : 'text-emerald-700'
-                              }`}>
-                                {p.daysRemaining}d
-                              </span>
-                            ) : (
-                              <span className="text-stone-400 text-[10px]">No history</span>
-                            )}
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            <AlertBadge level={p.alertLevel} />
-                          </td>
-                          <td className="py-2 px-3 text-center font-bold text-stone-700">{p.totalOutLast7Days}</td>
-                          <td className="py-2 px-3 text-center font-bold text-stone-700">{p.totalOutLast30Days}</td>
-                        </tr>
-                      ))
+                      .map((p) => {
+                        const risk = p.riskLevel || (p.alertLevel === 'CRITICAL' ? 'HIGH_RISK' : p.alertLevel === 'WARNING' ? 'MEDIUM_RISK' : 'HEALTHY');
+                        return (
+                          <tr
+                            key={p.inventoryId}
+                            className={`transition-colors ${
+                              risk === 'HIGH_RISK' ? 'bg-red-50/70' :
+                              risk === 'MEDIUM_RISK' ? 'bg-amber-50/70' : ''
+                            }`}
+                          >
+                            <td className="py-2 px-3">
+                              <span className="font-black text-stone-900 uppercase block">{p.productName}</span>
+                              <span className="text-[10px] text-stone-500">{p.sku} &bull; {p.category}</span>
+                            </td>
+                            <td className="py-2 px-3 text-center font-black text-stone-900">{p.currentStock}</td>
+                            <td className="py-2 px-3 text-center text-stone-600">{p.minimumStock}</td>
+                            <td className="py-2 px-3 text-center">
+                              {p.avgDailyConsumption > 0
+                                ? <span className="font-bold text-stone-800">{p.avgDailyConsumption}/day</span>
+                                : <span className="text-stone-400">&mdash;</span>}
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              {p.daysRemaining !== null ? (
+                                <span className={`font-black ${
+                                  p.daysRemaining <= 7 ? 'text-red-700' :
+                                  p.daysRemaining <= 14 ? 'text-amber-700' : 'text-emerald-700'
+                                }`}>
+                                  ~{p.daysRemaining} days
+                                </span>
+                              ) : (
+                                <span className="text-stone-400 text-[10px]">Insufficient Data</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              <RiskBadge risk={risk} />
+                            </td>
+                            <td className="py-2 px-3 text-center font-bold text-stone-700">{p.totalOutLast7Days}</td>
+                            <td className="py-2 px-3 text-center font-bold text-stone-700">{p.totalOutLast30Days}</td>
+                          </tr>
+                        );
+                      })
                   )}
                 </tbody>
               </table>
             </div>
 
-            <p className="font-mono text-[10px] text-stone-400 uppercase mt-3">
-              * Days remaining calculated from average daily OUT movements (last 90 days). Products with no OUT history show "No history".
+            <p className="font-mono text-[10px] text-stone-500 uppercase mt-3">
+              * Days remaining = Current On-Hand / Avg Daily OUT (90-day window). Real movements only.
             </p>
           </div>
 

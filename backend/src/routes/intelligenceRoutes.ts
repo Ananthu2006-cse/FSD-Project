@@ -67,25 +67,33 @@ router.get('/predictions', async (_req: AuthenticatedRequest, res: Response): Pr
         daysRemaining = Math.floor(inv.quantity / avgDailyConsumption);
       }
 
-      // Alert level
-      let alertLevel: 'CRITICAL' | 'WARNING' | 'OK' | 'NO_DATA' = 'NO_DATA';
+      // Risk level indicator (Prompt 2: High, Medium, Low, Healthy, Insufficient Data)
+      let riskLevel: 'HIGH_RISK' | 'MEDIUM_RISK' | 'LOW_RISK' | 'HEALTHY' | 'INSUFFICIENT_DATA' = 'INSUFFICIENT_DATA';
       if (daysRemaining !== null) {
-        if (daysRemaining <= 7)  alertLevel = 'CRITICAL';
-        else if (daysRemaining <= 14) alertLevel = 'WARNING';
-        else alertLevel = 'OK';
+        if (daysRemaining <= 7) riskLevel = 'HIGH_RISK';
+        else if (daysRemaining <= 14) riskLevel = 'MEDIUM_RISK';
+        else if (daysRemaining <= 30) riskLevel = 'LOW_RISK';
+        else riskLevel = 'HEALTHY';
       } else if (inv.quantity <= inv.minimumStock) {
-        // Even without movement data, honour the existing low-stock threshold
-        alertLevel = inv.quantity === 0 ? 'CRITICAL' : 'WARNING';
+        riskLevel = inv.quantity === 0 ? 'HIGH_RISK' : 'MEDIUM_RISK';
       }
 
-      // Restock suggestion
-      const targetStock = Math.max(inv.minimumStock * 2, Math.ceil(avgDailyConsumption * 30));
+      // Alert level (compatible with previous code)
+      let alertLevel: 'CRITICAL' | 'WARNING' | 'OK' | 'NO_DATA' = 'NO_DATA';
+      if (riskLevel === 'HIGH_RISK') alertLevel = 'CRITICAL';
+      else if (riskLevel === 'MEDIUM_RISK') alertLevel = 'WARNING';
+      else if (riskLevel === 'LOW_RISK' || riskLevel === 'HEALTHY') alertLevel = 'OK';
+      else alertLevel = 'NO_DATA';
+
+      // Replenishment & Restock calculation (Lead time 7 days buffer + 30 days cycle)
+      const leadTimeDays = 7;
+      const targetStock = Math.max(inv.minimumStock * 2, Math.ceil(avgDailyConsumption * (30 + leadTimeDays)));
       const suggestedReorderQty = Math.max(0, targetStock - inv.quantity);
 
       let reorderUrgency: 'URGENT' | 'SOON' | 'MONITOR' | 'OK' = 'OK';
-      if (alertLevel === 'CRITICAL') reorderUrgency = 'URGENT';
-      else if (alertLevel === 'WARNING') reorderUrgency = 'SOON';
-      else if (inv.quantity <= inv.minimumStock * 1.5) reorderUrgency = 'MONITOR';
+      if (riskLevel === 'HIGH_RISK') reorderUrgency = 'URGENT';
+      else if (riskLevel === 'MEDIUM_RISK') reorderUrgency = 'SOON';
+      else if (inv.quantity <= inv.minimumStock * 1.5 || riskLevel === 'LOW_RISK') reorderUrgency = 'MONITOR';
 
       return {
         productId,
@@ -98,11 +106,13 @@ router.get('/predictions', async (_req: AuthenticatedRequest, res: Response): Pr
         minimumStock: inv.minimumStock,
         avgDailyConsumption: parseFloat(avgDailyConsumption.toFixed(2)),
         daysRemaining,
+        riskLevel,
         alertLevel,
         suggestedReorderQty,
         reorderUrgency,
         totalOutLast30Days,
         totalOutLast7Days,
+        hasHistoricalData: movements.length > 0,
       };
     });
 
@@ -145,14 +155,17 @@ router.get('/predictions', async (_req: AuthenticatedRequest, res: Response): Pr
     const dailyTrend = Object.entries(dailyTrendMap).map(([date, totalOut]) => ({ date, totalOut }));
 
     // ── Summary counts ──────────────────────────────────────────────────────
-    const criticalCount = predictions.filter((p) => p.alertLevel === 'CRITICAL').length;
-    const warningCount  = predictions.filter((p) => p.alertLevel === 'WARNING').length;
+    const highRiskCount = predictions.filter((p) => p.riskLevel === 'HIGH_RISK').length;
+    const mediumRiskCount = predictions.filter((p) => p.riskLevel === 'MEDIUM_RISK').length;
+    const lowRiskCount = predictions.filter((p) => p.riskLevel === 'LOW_RISK').length;
+    const criticalCount = highRiskCount;
+    const warningCount  = mediumRiskCount;
     const pendingRestockCount = predictions.filter((p) => p.suggestedReorderQty > 0).length;
 
     res.json({
       predictions,
       demandAnalytics: { fastMoving, slowMoving, dailyTrend },
-      summary: { criticalCount, warningCount, pendingRestockCount },
+      summary: { highRiskCount, mediumRiskCount, lowRiskCount, criticalCount, warningCount, pendingRestockCount },
     });
   } catch (err: any) {
     console.error('[Intelligence] Error:', err.message);

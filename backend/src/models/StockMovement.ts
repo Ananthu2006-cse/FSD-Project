@@ -11,6 +11,8 @@ export interface IStockMovement extends Document {
   toWarehouseId?: Types.ObjectId;
   toLocationId?: Types.ObjectId;
   quantity: number;
+  previousQuantity?: number;
+  newQuantity?: number;
   reason: string;
   userId: Types.ObjectId;
   createdAt: Date;
@@ -51,6 +53,14 @@ const StockMovementSchema: Schema = new Schema(
       type: Number,
       required: [true, 'Quantity is required'],
       min: [1, 'Quantity must be at least 1'],
+    },
+    previousQuantity: {
+      type: Number,
+      default: 0,
+    },
+    newQuantity: {
+      type: Number,
+      default: 0,
     },
     reason: {
       type: String,

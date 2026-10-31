@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { useAuth } from './AuthContext';
 import {
   Product,
@@ -7,8 +8,9 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  exportProductsCsv,
 } from './api';
-import axios from 'axios';
+import { ConfirmModal, SkeletonTable, StatusBadge, EmptyState } from './components/UIComponents';
 
 const DEFAULT_FORM: ProductFormData = {
   name: '',
@@ -30,10 +32,13 @@ export const Products: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
 
-  // Search & Filter
+  // Search & Filter & Sort
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isExportingCsv, setIsExportingCsv] = useState<boolean>(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -50,18 +55,36 @@ export const Products: React.FC = () => {
 
   useEffect(() => {
     loadProducts();
-  }, []);
+  }, [sortBy, sortOrder]);
 
   const loadProducts = async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await fetchProducts();
+      const data = await fetchProducts({ sortBy, sortOrder });
       setProducts(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load product catalog.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportCsv = async () => {
+    setIsExportingCsv(true);
+    try {
+      const blob = await exportProductsCsv();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `products-catalog-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      notifySuccess('Product catalogue exported to CSV successfully.');
+    } catch {
+      setError('Failed to export products to CSV.');
+    } finally {
+      setIsExportingCsv(false);
     }
   };
 
@@ -227,21 +250,29 @@ export const Products: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             {canManage && (
               <button
                 onClick={openCreateModal}
-                className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 active:translate-x-0.5 active:translate-y-0.5 text-stone-950 font-mono font-black text-xs sm:text-sm tracking-wider uppercase border-2 border-stone-900 rounded shadow-[3px_3px_0px_0px_#1c1917] transition-all flex items-center gap-2"
+                className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 active:translate-x-0.5 active:translate-y-0.5 text-stone-950 font-mono font-black text-xs tracking-wider uppercase border-2 border-stone-900 rounded shadow-[3px_3px_0px_0px_#1c1917] transition-all flex items-center gap-1.5"
               >
                 <span>+ ADD PRODUCT</span>
               </button>
             )}
             <button
+              onClick={handleExportCsv}
+              disabled={isExportingCsv}
+              className="px-3 py-2 bg-white hover:bg-stone-100 active:translate-x-0.5 active:translate-y-0.5 text-stone-900 font-mono font-bold text-xs uppercase border-2 border-stone-900 rounded shadow-[2px_2px_0px_0px_#1c1917] transition-all flex items-center gap-1.5"
+              title="Download Product CSV"
+            >
+              <span>{isExportingCsv ? 'EXPORTING...' : '📥 EXPORT CSV'}</span>
+            </button>
+            <button
               onClick={loadProducts}
-              className="px-3 py-2.5 bg-[#f4eedb] hover:bg-stone-200 active:translate-x-0.5 active:translate-y-0.5 text-stone-800 font-mono font-bold text-xs uppercase border-2 border-stone-900 rounded shadow-[2px_2px_0px_0px_#1c1917] transition-all"
+              className="px-2.5 py-2 bg-[#f4eedb] hover:bg-stone-200 active:translate-x-0.5 active:translate-y-0.5 text-stone-800 font-mono font-bold text-xs uppercase border-2 border-stone-900 rounded shadow-[2px_2px_0px_0px_#1c1917] transition-all"
               title="Refresh Products"
             >
-              [ Refresh ]
+              ⟳ REFRESH
             </button>
           </div>
         </div>
@@ -261,10 +292,10 @@ export const Products: React.FC = () => {
           </div>
         )}
 
-        {/* Search & Filter Strip */}
+        {/* Search, Filter & Sort Strip */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2">
           {/* Search Box */}
-          <div className="sm:col-span-5">
+          <div className="sm:col-span-4">
             <label className="block font-mono text-[10px] font-bold text-stone-700 uppercase tracking-wider mb-1">
               Search by Name or SKU
             </label>
@@ -288,7 +319,7 @@ export const Products: React.FC = () => {
           </div>
 
           {/* Category Filter */}
-          <div className="sm:col-span-4">
+          <div className="sm:col-span-3">
             <label className="block font-mono text-[10px] font-bold text-stone-700 uppercase tracking-wider mb-1">
               Category
             </label>
@@ -307,7 +338,7 @@ export const Products: React.FC = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="sm:col-span-3">
+          <div className="sm:col-span-2">
             <label className="block font-mono text-[10px] font-bold text-stone-700 uppercase tracking-wider mb-1">
               Status
             </label>
@@ -320,6 +351,34 @@ export const Products: React.FC = () => {
               <option value="ACTIVE">ACTIVE ONLY</option>
               <option value="INACTIVE">INACTIVE ONLY</option>
             </select>
+          </div>
+
+          {/* Sort By (Prompt 3 requirement) */}
+          <div className="sm:col-span-3">
+            <label className="block font-mono text-[10px] font-bold text-stone-700 uppercase tracking-wider mb-1">
+              Sort By
+            </label>
+            <div className="flex gap-1.5">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full font-mono text-xs px-2.5 py-2 bg-[#fdfbf7] border-2 border-stone-900 rounded shadow-[2px_2px_0px_0px_#1c1917] focus:outline-none focus:bg-white focus:border-amber-600 transition-all uppercase"
+              >
+                <option value="createdAt">Date Created</option>
+                <option value="name">Product Name</option>
+                <option value="sku">SKU Code</option>
+                <option value="price">Unit Price</option>
+                <option value="quantity">Stock Qty</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+                className="px-2.5 py-2 bg-stone-900 text-amber-300 font-mono text-xs font-black rounded border-2 border-stone-900 shadow-[2px_2px_0px_0px_#1c1917]"
+                title={sortOrder === 'asc' ? 'Ascending (A-Z, 0-9)' : 'Descending (Z-A, 9-0)'}
+              >
+                {sortOrder === 'asc' ? '▲' : '▼'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -344,25 +403,14 @@ export const Products: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="py-16 text-center font-mono text-sm text-stone-600">
-            <div className="w-8 h-8 border-3 border-stone-900 border-t-amber-500 rounded-full animate-spin mx-auto mb-3" />
-            Scanning Product Ledger...
-          </div>
+          <SkeletonTable rows={5} cols={6} />
         ) : filteredProducts.length === 0 ? (
-          <div className="py-12 text-center font-mono border-2 border-dashed border-stone-300 rounded p-6 bg-[#fdfbf7]">
-            <p className="text-stone-700 font-bold uppercase text-sm mb-2">No matching products found</p>
-            <p className="text-stone-500 text-xs">
-              Try adjusting your search criteria, or {canManage ? 'create a new product' : 'contact an administrator'}.
-            </p>
-            {canManage && (
-              <button
-                onClick={openCreateModal}
-                className="mt-4 px-3 py-1.5 bg-amber-400 hover:bg-amber-300 border-2 border-stone-900 rounded text-xs font-bold uppercase shadow-[2px_2px_0px_0px_#1c1917]"
-              >
-                + Register First Product
-              </button>
-            )}
-          </div>
+          <EmptyState
+            title="No Matching Products Found"
+            description="Try adjusting your search query, status or category filters, or register a new product."
+            actionText={canManage ? "+ Register Product" : undefined}
+            onAction={canManage ? openCreateModal : undefined}
+          />
         ) : (
           <div className="border-2 border-stone-900 rounded overflow-x-auto shadow-[3px_3px_0px_0px_#1c1917]">
             <table className="w-full text-left font-mono text-xs">
@@ -426,20 +474,7 @@ export const Products: React.FC = () => {
 
                     {/* Status */}
                     <td className="py-3 px-4 text-center">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                          p.status === 'ACTIVE'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-600'
-                            : 'bg-red-100 text-red-800 border border-red-600'
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            p.status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-red-600'
-                          }`}
-                        />
-                        {p.status}
-                      </span>
+                      <StatusBadge status={p.status} />
                     </td>
 
                     {/* Actions (Admin / Manager) */}
@@ -683,45 +718,17 @@ export const Products: React.FC = () => {
       )}
 
       {/* ─── Delete Confirmation Modal ───────────────────────────────────────── */}
-      {isDeleteModalOpen && productToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#fffdf7] border-4 border-stone-900 rounded-lg max-w-md w-full p-6 shadow-[8px_8px_0px_0px_#1c1917]">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-red-400 border-2 border-stone-900 flex items-center justify-center text-stone-950 font-bold text-lg shadow-[2px_2px_0px_0px_#1c1917]">
-                ⚠
-              </div>
-              <div>
-                <span className="font-mono text-[10px] font-bold bg-red-200 text-red-900 px-2 py-0.5 rounded border border-red-800 uppercase">
-                  CONFIRM DELETION
-                </span>
-                <h3 className="text-base font-black text-stone-900 uppercase">Delete Product?</h3>
-              </div>
-            </div>
-
-            <p className="font-mono text-xs text-stone-700 mb-4">
-              Are you sure you want to delete <strong className="text-stone-950 font-black">{productToDelete.name}</strong> (SKU: <code className="bg-stone-200 px-1 py-0.5 rounded">{productToDelete.sku}</code>)? This action will permanently remove this item from the warehouse catalogue.
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-dashed border-stone-300">
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 bg-[#f4eedb] hover:bg-stone-200 border-2 border-stone-900 rounded font-mono font-bold text-xs uppercase shadow-[2px_2px_0px_0px_#1c1917]"
-              >
-                [ Cancel ]
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-red-500 hover:bg-red-400 text-white border-2 border-stone-900 rounded font-mono font-black text-xs uppercase shadow-[2px_2px_0px_0px_#1c1917] disabled:opacity-50 transition-all flex items-center gap-1.5"
-              >
-                {isDeleting ? 'Deleting...' : '[ CONFIRM DELETE ]'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen && !!productToDelete}
+        title="Delete Product?"
+        message={`Are you sure you want to delete "${productToDelete?.name}" (SKU: ${productToDelete?.sku})? This action will permanently remove this item from the warehouse catalogue.`}
+        confirmLabel="Confirm Delete"
+        cancelLabel="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 };
